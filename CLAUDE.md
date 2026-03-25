@@ -81,3 +81,101 @@ cf push
 cf bind-service spring-music <service-instance>
 cf restart spring-music
 ```
+
+---
+
+## Modernized Stack
+
+The `Modernized/` directory contains the replacement app: **Node.js (Express) backend + React (Vite) frontend**, using a strangler fig approach.
+
+> **Do not make any changes inside `Legacy/`.**
+
+### Tech Stack
+
+| Layer | Legacy | Modernized |
+|-------|--------|------------|
+| Backend | Spring Boot 2.4 (Java) | Node.js + Express 4 |
+| Database | H2 / MySQL / Postgres / MongoDB / Redis | SQLite in-memory (better-sqlite3) |
+| Frontend | AngularJS 1.2.16 | React 18 + Vite |
+| CSS | Bootstrap 3 | Bootstrap 5 |
+| Testing | JUnit | Vitest + Supertest |
+
+### Building and Running (Modernized App)
+
+**Backend** (runs on port 3001):
+
+```bash
+cd Modernized/backend
+npm install
+npm start          # production
+npm run dev        # with nodemon hot-reload
+```
+
+**Frontend** (runs on port 5173):
+
+```bash
+cd Modernized/frontend
+npm install
+npm run dev        # dev server with proxy to backend
+npm run build      # production build
+```
+
+**Tests:**
+
+```bash
+# Backend characterization + contract tests
+cd Modernized/backend
+npm test
+
+# Frontend component tests
+cd Modernized/frontend
+npm test
+```
+
+### Architecture (Modernized)
+
+**Backend** (`Modernized/backend/src/`):
+
+| File | Role |
+|------|------|
+| `index.js` | Express app entry point — port 3001, CORS, JSON middleware, mounts all routes |
+| `db/database.js` | SQLite in-memory setup + schema (replaces H2 + JPA DDL auto-gen) |
+| `db/seed.js` | Loads `albums.json` on startup if table empty (replaces `AlbumRepositoryPopulator`) |
+| `models/album.js` | Query functions: `findAll`, `findById`, `save`, `deleteById`, `count` |
+| `routes/albums.js` | Album CRUD — `GET/PUT/POST/DELETE /albums` (mirrors `AlbumController.java`) |
+| `routes/appinfo.js` | `GET /appinfo` + `GET /service` (replaces `InfoController.java`, CF logic dropped) |
+| `routes/errors.js` | `GET /errors/kill|throw|fill-heap` (replaces `ErrorController.java`) |
+| `middleware/validation.js` | Request validation — required fields, year pattern `^[1-2]\d{3}$` |
+
+**Frontend** (`Modernized/frontend/src/`):
+
+| File | Replaces |
+|------|----------|
+| `App.jsx` | `app.js` Angular module + `$routeProvider` |
+| `api/albums.js` | All `$resource` factories (`Albums`, `Album`, `Errors`, `Info`) |
+| `hooks/useAlbums.js` | Albums/Album factories + controller CRUD methods |
+| `hooks/useStatus.js` | `Status` factory + `StatusController` |
+| `components/AlbumsPage.jsx` | `AlbumsController` + `albums.html` |
+| `components/AlbumGrid.jsx` | `grid.html` + `ng-repeat` |
+| `components/AlbumList.jsx` | `list.html` table |
+| `components/AlbumCard.jsx` | Single card in `grid.html` |
+| `components/AlbumForm.jsx` | `AlbumModalController` + `albumForm.html` |
+| `components/InPlaceEdit.jsx` | `inPlaceEdit` directive + `AlbumEditorController` |
+| `components/Header.jsx` | `InfoController` + `header.html` |
+| `components/ErrorsPage.jsx` | `ErrorsController` + `errors.html` |
+| `components/StatusMessage.jsx` | `StatusController` + `status.html` |
+
+### API Contract (Modernized — matches Legacy exactly)
+
+| Endpoint | Method | Behavior |
+|----------|--------|----------|
+| `/albums` | GET | Return all albums as JSON array |
+| `/albums/:id` | GET | Return album or `null` (not 404 — matches legacy `.orElse(null)`) |
+| `/albums` | PUT | Create album — generates UUID, returns saved album |
+| `/albums` | POST | Update album — returns updated album |
+| `/albums/:id` | DELETE | Delete by ID — 200 even if not found (matches legacy) |
+| `/appinfo` | GET | `{ profiles: ["node"], services: [] }` |
+| `/actuator/health` | GET | `{ status: "UP", db: "SQLite (in-memory)" }` |
+| `/errors/kill` | GET | `process.exit(1)` |
+| `/errors/throw` | GET | Throws, returns 500 |
+| `/errors/fill-heap` | GET | Memory allocation loop |
