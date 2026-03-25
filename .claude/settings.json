@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Checking CLAUDE.md sync...",
+            "command": "jq -r '.tool_input.file_path // \"\"' | { read -r f; [ -n \"$f\" ] && [ \"$(basename \"$f\")\" != \"CLAUDE.md\" ] && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"CLAUDE.md sync reminder: You just modified a file. If this change affects any of the following, update CLAUDE.md at spring-music/CLAUDE.md: (1) architecture or package structure, (2) coding conventions or naming rules, (3) technology stack, (4) user stories US-1/US-2/US-3 or their acceptance criteria, (5) known design decisions or gotchas table, (6) test file locations or testing patterns.\"}}'; } 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
