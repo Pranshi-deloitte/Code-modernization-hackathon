@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **Code Modernization Hackathon** repository. The `Legacy/` directory contains the original Spring Music application; the `Modernized/` directory is the target for the modernized version.
 
+> **Do not make any changes inside `Legacy/`.**
+
 ## Building and Running (Legacy App)
 
 All commands run from `Legacy/spring-music/`:
