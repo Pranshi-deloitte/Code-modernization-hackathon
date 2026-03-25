@@ -8,6 +8,7 @@
 - Jitender
 - Suyash Singh - suyassingh@deloitte.com()
 - Prasham Ashesh - pashesh@deloitte.com ()
+- Pranshi Garg - pragarg@deloitte.com
 
 ## Scenario
 Scenario <1>: Code Modernization for Spring Music 
