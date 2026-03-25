@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Spring Music — API Docs</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css"/>
+  <style>
+    body { margin: 0; background: #fafafa; }
+    .swagger-ui .topbar { display: none; }
+  </style>
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
+<script>
+const spec = {
+  openapi: "3.0.3",
+  info: {
+    title: "Spring Music API",
+    version: "1.0",
+    description: "Album management API for the Spring Music sample application."
+  },
+  servers: [{ url: "http://localhost:8080", description: "Local" }],
+  tags: [
+    { name: "Albums",  description: "CRUD operations on albums" },
+    { name: "Info",    description: "Application info and bound services" },
+    { name: "Errors",  description: "Test endpoints — simulate failures" }
+  ],
+  components: {
+    schemas: {
+      Album: {
+        type: "object",
+        properties: {
+          id:          { type: "string", example: "99774030-75fa-42da-9d0b-14a66d2ff22b", readOnly: true },
+          title:       { type: "string", example: "Nevermind" },
+          artist:      { type: "string", example: "Nirvana" },
+          releaseYear: { type: "string", example: "1991" },
+          genre:       { type: "string", example: "Rock" },
+          trackCount:  { type: "integer", example: 13 },
+          albumId:     { type: "string", nullable: true, example: null }
+        }
+      },
+      AlbumInput: {
+        type: "object",
+        required: ["title", "artist"],
+        properties: {
+          title:       { type: "string", example: "Nevermind" },
+          artist:      { type: "string", example: "Nirvana" },
+          releaseYear: { type: "string", example: "1991" },
+          genre:       { type: "string", example: "Rock" },
+          trackCount:  { type: "integer", example: 13 }
+        }
+      },
+      AlbumUpdate: {
+        type: "object",
+        required: ["id", "title", "artist"],
+        properties: {
+          id:          { type: "string", example: "99774030-75fa-42da-9d0b-14a66d2ff22b" },
+          title:       { type: "string", example: "Nevermind" },
+          artist:      { type: "string", example: "Nirvana" },
+          releaseYear: { type: "string", example: "1991" },
+          genre:       { type: "string", example: "Rock" },
+          trackCount:  { type: "integer", example: 13 },
+          albumId:     { type: "string", nullable: true, example: null }
+        }
+      },
+      AppInfo: {
+        type: "object",
+        properties: {
+          profiles: { type: "array", items: { type: "string" }, example: [] },
+          services: { type: "array", items: { type: "string" }, example: [] }
+        }
+      }
+    }
+  },
+  paths: {
+    "/albums": {
+      get: {
+        tags: ["Albums"],
+        summary: "List all albums",
+        operationId: "listAlbums",
+        responses: {
+          "200": {
+            description: "Array of all albums",
+            content: {
+              "application/json": {
+                schema: { type: "array", items: { "$ref": "#/components/schemas/Album" } },
+                example: [
+                  { id: "99774030-75fa-42da-9d0b-14a66d2ff22b", title: "Nevermind", artist: "Nirvana", releaseYear: "1991", genre: "Rock", trackCount: 0, albumId: null },
+                  { id: "45c3c353-4ee0-41a4-a628-fb6a86bdaf0b", title: "Pet Sounds", artist: "The Beach Boys", releaseYear: "1966", genre: "Rock", trackCount: 0, albumId: null }
+                ]
+              }
+            }
+          }
+        }
+      },
+      put: {
+        tags: ["Albums"],
+        summary: "Create a new album",
+        operationId: "createAlbum",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { "$ref": "#/components/schemas/AlbumInput" },
+              example: { title: "Dark Side of the Moon", artist: "Pink Floyd", releaseYear: "1973", genre: "Progressive Rock", trackCount: 10 }
+            }
+          }
+        },
+        responses: {
+          "200": {
+            description: "Created album with generated UUID",
+            content: {
+              "application/json": {
+                schema: { "$ref": "#/components/schemas/Album" },
+                example: { id: "30ebbb77-a329-4a09-af35-f838796ac19b", title: "Dark Side of the Moon", artist: "Pink Floyd", releaseYear: "1973", genre: "Progressive Rock", trackCount: 10, albumId: null }
+              }
+            }
+          }
+        }
+      },
+      post: {
+        tags: ["Albums"],
+        summary: "Update an existing album",
+        operationId: "updateAlbum",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { "$ref": "#/components/schemas/AlbumUpdate" },
+              example: { id: "30ebbb77-a329-4a09-af35-f838796ac19b", title: "The Dark Side of the Moon", artist: "Pink Floyd", releaseYear: "1973", genre: "Progressive Rock", trackCount: 10, albumId: null }
+            }
+          }
+        },
+        responses: {
+          "200": {
+            description: "Updated album",
+            content: {
+              "application/json": {
+                schema: { "$ref": "#/components/schemas/Album" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/albums/{id}": {
+      get: {
+        tags: ["Albums"],
+        summary: "Get album by ID",
+        operationId: "getAlbum",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" }, example: "99774030-75fa-42da-9d0b-14a66d2ff22b" }
+        ],
+        responses: {
+          "200": {
+            description: "Album found",
+            content: {
+              "application/json": {
+                schema: { "$ref": "#/components/schemas/Album" },
+                example: { id: "99774030-75fa-42da-9d0b-14a66d2ff22b", title: "Nevermind", artist: "Nirvana", releaseYear: "1991", genre: "Rock", trackCount: 0, albumId: null }
+              }
+            }
+          }
+        }
+      },
+      delete: {
+        tags: ["Albums"],
+        summary: "Delete album by ID",
+        operationId: "deleteAlbum",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string" }, example: "99774030-75fa-42da-9d0b-14a66d2ff22b" }
+        ],
+        responses: {
+          "200": { description: "Album deleted successfully" }
+        }
+      }
+    },
+    "/appinfo": {
+      get: {
+        tags: ["Info"],
+        summary: "Active profiles and bound CF services",
+        operationId: "getAppInfo",
+        responses: {
+          "200": {
+            description: "Application info",
+            content: {
+              "application/json": {
+                schema: { "$ref": "#/components/schemas/AppInfo" },
+                example: { profiles: [], services: [] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/service": {
+      get: {
+        tags: ["Info"],
+        summary: "Cloud Foundry service binding details",
+        operationId: "getServices",
+        responses: {
+          "200": {
+            description: "List of bound CF services (empty when running locally)",
+            content: {
+              "application/json": {
+                schema: { type: "array", items: { type: "object" } },
+                example: []
+              }
+            }
+          }
+        }
+      }
+    },
+    "/errors/throw": {
+      get: {
+        tags: ["Errors"],
+        summary: "Throw a NullPointerException",
+        operationId: "throwException",
+        responses: {
+          "500": { description: "NullPointerException — Internal Server Error" }
+        }
+      }
+    },
+    "/errors/kill": {
+      get: {
+        tags: ["Errors"],
+        summary: "Kill the application (System.exit 1)",
+        operationId: "killApp",
+        responses: {
+          "200": { description: "App process is terminated — no response received" }
+        }
+      }
+    },
+    "/errors/fill-heap": {
+      get: {
+        tags: ["Errors"],
+        summary: "Force OutOfMemoryError by filling the heap",
+        operationId: "fillHeap",
+        responses: {
+          "500": { description: "OutOfMemoryError" }
+        }
+      }
+    }
+  }
+};
+
+SwaggerUIBundle({
+  spec,
+  dom_id: "#swagger-ui",
+  presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+  layout: "BaseLayout",
+  deepLinking: true,
+  defaultModelsExpandDepth: 1,
+  defaultModelExpandDepth: 1,
+  displayRequestDuration: true,
+  tryItOutEnabled: true
+});
+</script>
+</body>
+</html>
