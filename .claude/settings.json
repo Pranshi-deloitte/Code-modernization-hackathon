@@ -1,4 +1,11 @@
 {
+  "permissions": {
+    "deny": [
+      "Edit(Legacy/spring-music/**)",
+      "Write(Legacy/spring-music/**)",
+      "Bash(* Legacy/spring-music/*)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
