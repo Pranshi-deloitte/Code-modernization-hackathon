@@ -1,3 +1,4 @@
+
 # Team <name>
 
 ## Participants
