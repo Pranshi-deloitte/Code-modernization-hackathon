@@ -7,6 +7,18 @@
     ]
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Running tests before push...",
+            "command": "cmd=$(jq -r '.tool_input.command'); echo \"$cmd\" | grep -q 'git push' || exit 0; cd /Users/pashesh/Desktop/Code/hackathon/Code-modernization-hackathon/Modernized/tests/node && npm install --silent 2>/dev/null && npm test 2>&1; code=$?; [ $code -eq 0 ] && echo '{}' || echo '{\"decision\":\"block\",\"reason\":\"Tests in Modernized/tests/node failed. Fix failing tests before pushing.\"}'"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
