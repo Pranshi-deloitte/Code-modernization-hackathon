@@ -6,6 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **Code Modernization Hackathon** repository. The `Legacy/` directory contains the original Spring Music application; the `Modernized/` directory is the target for the modernized version.
 
+> **Do not make any changes inside `Legacy/`.**
+
+## Project Goal
+
+Spring Music is a Spring Boot sample app built for Cloud Foundry. It stores the same domain objects across relational, document, and key-value stores using bean profiles and Spring Cloud Connectors. It was never meant to be realistic — it was meant to demo persistence options. Which is exactly why it's a perfect stand-in for "someone built this to prove a point and then it accidentally became production."
+
+The goal is to modernize this legacy monolith by picking a lane: write user stories, decompose the architecture, pin behavior with characterization tests, extract services with clean contracts, build anti-corruption layers, add contract tests, wire up independent CI/CD pipelines, and — if you're still standing — handle dual-write event-driven extraction and write the 3am cutover runbook. Pick a lane or pair up. Nobody finishes all ten — that's the point.
+
 ## Building and Running (Legacy App)
 
 All commands run from `Legacy/spring-music/`:
