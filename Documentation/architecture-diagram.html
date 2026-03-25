@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring Music — Modernization Architecture</title>
+    <style>
+        :root {
+            --green-dark: #006b00;
+            --green: #008a00;
+            --green-light: #e8f5e9;
+            --blue: #1565c0;
+            --blue-light: #e3f2fd;
+            --orange: #e65100;
+            --orange-light: #fff3e0;
+            --purple: #6a1b9a;
+            --purple-light: #f3e5f5;
+            --red: #c62828;
+            --red-light: #ffebee;
+            --gray: #546e7a;
+            --gray-light: #f5f5f5;
+            --gray-border: #cfd8dc;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+            --radius: 10px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #fafafa;
+            color: #263238;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .hero {
+            background: linear-gradient(135deg, var(--green-dark), var(--green), #00a000);
+            color: white;
+            padding: 48px 32px;
+            text-align: center;
+        }
+        .hero h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 8px; }
+        .hero p { font-size: 1.1rem; opacity: 0.9; max-width: 700px; margin: 0 auto; }
+        .hero .badge-row { margin-top: 16px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .hero .badge {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            backdrop-filter: blur(4px);
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+        /* Section */
+        .section { margin-bottom: 48px; }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid var(--green);
+            display: inline-block;
+        }
+        .section-subtitle {
+            font-size: 0.95rem;
+            color: var(--gray);
+            margin-top: -12px;
+            margin-bottom: 20px;
+        }
+
+        /* High-level diagram */
+        .system-overview {
+            display: grid;
+            grid-template-columns: 1fr 60px 1fr;
+            gap: 0;
+            align-items: stretch;
+        }
+        @media (max-width: 800px) {
+            .system-overview { grid-template-columns: 1fr; }
+            .arrow-col { transform: rotate(90deg); height: 60px; }
+        }
+
+        .box {
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-border);
+            background: white;
+        }
+        .box-header {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+        .box-port {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-bottom: 12px;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+        }
+
+        .box.frontend { border-top: 4px solid var(--blue); }
+        .box.backend { border-top: 4px solid var(--green); }
+        .box.database { border-top: 4px solid var(--orange); }
+        .box.legacy { border-top: 4px solid var(--gray); }
+        .box.acl { border-top: 4px solid var(--purple); }
+
+        .arrow-col {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--gray);
+        }
+
+        /* Route table */
+        .route-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.88rem; }
+        .route-table th {
+            text-align: left;
+            padding: 6px 8px;
+            background: var(--gray-light);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gray);
+        }
+        .route-table td {
+            padding: 5px 8px;
+            border-bottom: 1px solid #eee;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.82rem;
+        }
+        .method {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: white;
+            min-width: 52px;
+            text-align: center;
+        }
+        .method.get { background: #2e7d32; }
+        .method.put { background: #1565c0; }
+        .method.post { background: #e65100; }
+        .method.delete { background: #c62828; }
+
+        /* Component tree */
+        .tree { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.85rem; }
+        .tree ul { list-style: none; padding-left: 24px; border-left: 2px solid #e0e0e0; }
+        .tree > ul { border-left: none; padding-left: 0; }
+        .tree li { padding: 4px 0; position: relative; }
+        .tree li::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 14px;
+            width: 20px;
+            height: 0;
+            border-top: 2px solid #e0e0e0;
+        }
+        .tree > ul > li::before { display: none; }
+        .comp-name { font-weight: 700; color: var(--blue); }
+        .comp-replace { font-size: 0.78rem; color: var(--gray); font-style: italic; font-family: 'Segoe UI', sans-serif; }
+        .comp-desc { font-size: 0.8rem; color: #555; font-family: 'Segoe UI', sans-serif; }
+
+        /* Strangler fig */
+        .strangler-grid {
+            display: grid;
+            grid-template-columns: 1fr 80px 1fr;
+            gap: 0;
+            align-items: start;
+        }
+        @media (max-width: 800px) {
+            .strangler-grid { grid-template-columns: 1fr; }
+        }
+        .strangler-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: 60px;
+            color: var(--gray);
+        }
+        .strangler-arrow .arrow-line {
+            width: 2px;
+            height: 40px;
+            background: var(--gray);
+        }
+        .strangler-arrow .arrow-text {
+            writing-mode: vertical-lr;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin: 8px 0;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 4px;
+        }
+        .tag.eol { background: var(--red-light); color: var(--red); }
+        .tag.new { background: var(--green-light); color: var(--green-dark); }
+        .tag.shared { background: var(--purple-light); color: var(--purple); }
+
+        /* State flow */
+        .flow-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 800px) {
+            .flow-grid { grid-template-columns: 1fr; }
+        }
+        .flow-box {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-border);
+        }
+        .flow-box h4 {
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+        .flow-box .flow-sub {
+            font-size: 0.78rem;
+            color: var(--gray);
+            margin-bottom: 10px;
+        }
+        .flow-box ul {
+            list-style: none;
+            padding: 0;
+        }
+        .flow-box li {
+            padding: 3px 0;
+            font-size: 0.85rem;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+        }
+        .flow-box li::before {
+            content: '>';
+            color: var(--green);
+            font-weight: 700;
+            margin-right: 6px;
+        }
+
+        /* Backend layers */
+        .layers {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        .layer {
+            background: white;
+            border: 1px solid var(--gray-border);
+            padding: 20px 24px;
+            position: relative;
+        }
+        .layer:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+        .layer:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+        .layer + .layer { border-top: none; }
+        .layer-badge {
+            position: absolute;
+            top: -1px;
+            right: 20px;
+            padding: 2px 12px;
+            border-radius: 0 0 6px 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: white;
+        }
+        .layer.middleware .layer-badge { background: var(--gray); }
+        .layer.routes .layer-badge { background: var(--green); }
+        .layer.models .layer-badge { background: var(--blue); }
+        .layer.db .layer-badge { background: var(--orange); }
+        .layer h4 { margin-bottom: 8px; font-size: 1rem; }
+        .layer-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .layer-item {
+            background: var(--gray-light);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+        }
+
+        /* ACL */
+        .acl-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        .acl-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 18px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--purple);
+        }
+        .acl-card h4 {
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+            color: var(--purple);
+        }
+        .acl-card .acl-legacy {
+            background: var(--red-light);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.82rem;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            margin-bottom: 4px;
+        }
+        .acl-card .acl-arrow {
+            text-align: center;
+            color: var(--purple);
+            font-weight: 700;
+            padding: 2px 0;
+        }
+        .acl-card .acl-modern {
+            background: var(--green-light);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.82rem;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+        }
+
+        /* Lifecycle */
+        .lifecycle {
+            position: relative;
+            padding-left: 32px;
+        }
+        .lifecycle::before {
+            content: '';
+            position: absolute;
+            left: 14px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--blue), var(--green), var(--orange), var(--green), var(--blue));
+            border-radius: 2px;
+        }
+        .lc-step {
+            position: relative;
+            padding: 12px 0 12px 20px;
+        }
+        .lc-step::before {
+            content: '';
+            position: absolute;
+            left: -23px;
+            top: 18px;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px var(--green);
+        }
+        .lc-step:nth-child(1)::before { background: var(--blue); box-shadow: 0 0 0 2px var(--blue); }
+        .lc-step:nth-child(2)::before { background: var(--blue); box-shadow: 0 0 0 2px var(--blue); }
+        .lc-step:nth-child(3)::before { background: var(--blue); box-shadow: 0 0 0 2px var(--blue); }
+        .lc-step:nth-child(4)::before { background: var(--green); box-shadow: 0 0 0 2px var(--green); }
+        .lc-step:nth-child(5)::before { background: var(--green); box-shadow: 0 0 0 2px var(--green); }
+        .lc-step:nth-child(6)::before { background: var(--orange); box-shadow: 0 0 0 2px var(--orange); }
+        .lc-step:nth-child(7)::before { background: var(--green); box-shadow: 0 0 0 2px var(--green); }
+        .lc-step:nth-child(8)::before { background: var(--blue); box-shadow: 0 0 0 2px var(--blue); }
+        .lc-step:nth-child(9)::before { background: var(--blue); box-shadow: 0 0 0 2px var(--blue); }
+        .lc-label {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .lc-detail {
+            font-size: 0.82rem;
+            color: var(--gray);
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+        }
+        .lc-component {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .lc-component.fe { background: var(--blue-light); color: var(--blue); }
+        .lc-component.be { background: var(--green-light); color: var(--green-dark); }
+        .lc-component.db { background: var(--orange-light); color: var(--orange); }
+
+        /* Tech stack */
+        .stack-table { width: 100%; border-collapse: collapse; }
+        .stack-table th {
+            padding: 10px 14px;
+            text-align: left;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stack-table th:nth-child(1) { background: var(--gray-light); color: var(--gray); }
+        .stack-table th:nth-child(2) { background: var(--red-light); color: var(--red); }
+        .stack-table th:nth-child(3) { background: var(--green-light); color: var(--green-dark); }
+        .stack-table td {
+            padding: 8px 14px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.88rem;
+        }
+        .stack-table td:first-child { font-weight: 600; color: var(--gray); }
+        .stack-table tr:hover { background: #fafafa; }
+
+        /* Footer */
+        .page-footer {
+            text-align: center;
+            padding: 32px;
+            color: var(--gray);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--gray-border);
+            margin-top: 48px;
+        }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 0; margin-bottom: 0; }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid var(--gray-border);
+            border-bottom: none;
+            background: var(--gray-light);
+            font-size: 0.88rem;
+            font-weight: 600;
+            border-radius: var(--radius) var(--radius) 0 0;
+            color: var(--gray);
+            transition: all 0.2s;
+        }
+        .tab.active {
+            background: white;
+            color: var(--green-dark);
+            border-bottom: 2px solid white;
+            margin-bottom: -1px;
+            z-index: 1;
+        }
+        .tab-content {
+            display: none;
+            border: 1px solid var(--gray-border);
+            border-radius: 0 var(--radius) var(--radius) var(--radius);
+            padding: 24px;
+            background: white;
+        }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+    <h1>Spring Music &mdash; Modernization Architecture</h1>
+    <p>Strangler fig migration from Spring Boot 2.4 + AngularJS 1.2 to Node.js + React</p>
+    <div class="badge-row">
+        <span class="badge">Express 4.x</span>
+        <span class="badge">React 18</span>
+        <span class="badge">Vite</span>
+        <span class="badge">SQLite In-Memory</span>
+        <span class="badge">Vitest</span>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- 1. High-Level System Overview -->
+    <div class="section">
+        <div class="section-title">1. High-Level System Overview</div>
+        <div class="system-overview">
+            <!-- Frontend -->
+            <div class="box frontend">
+                <div class="box-header">Frontend &mdash; React + Vite</div>
+                <div class="box-port">http://localhost:5173</div>
+                <table class="route-table">
+                    <tr><th>Route</th><th>Component</th></tr>
+                    <tr><td>/</td><td>AlbumsPage</td></tr>
+                    <tr><td>/errors</td><td>ErrorsPage</td></tr>
+                </table>
+                <div style="margin-top:14px;">
+                    <strong style="font-size:0.85rem;">API Client (fetch)</strong>
+                    <table class="route-table">
+                        <tr><td>getAlbums()</td><td><span class="method get">GET</span></td></tr>
+                        <tr><td>addAlbum()</td><td><span class="method put">PUT</span></td></tr>
+                        <tr><td>updateAlbum()</td><td><span class="method post">POST</span></td></tr>
+                        <tr><td>deleteAlbum()</td><td><span class="method delete">DEL</span></td></tr>
+                        <tr><td>getAppInfo()</td><td><span class="method get">GET</span></td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Arrow -->
+            <div class="arrow-col">&harr;</div>
+
+            <!-- Backend -->
+            <div class="box backend">
+                <div class="box-header">Backend &mdash; Node.js + Express</div>
+                <div class="box-port">http://localhost:3001</div>
+                <table class="route-table">
+                    <tr><th>Method</th><th>Endpoint</th><th>Action</th></tr>
+                    <tr><td><span class="method get">GET</span></td><td>/albums</td><td>List all</td></tr>
+                    <tr><td><span class="method get">GET</span></td><td>/albums/:id</td><td>Get one</td></tr>
+                    <tr><td><span class="method put">PUT</span></td><td>/albums</td><td>Create</td></tr>
+                    <tr><td><span class="method post">POST</span></td><td>/albums</td><td>Update</td></tr>
+                    <tr><td><span class="method delete">DEL</span></td><td>/albums/:id</td><td>Delete</td></tr>
+                    <tr><td><span class="method get">GET</span></td><td>/appinfo</td><td>Profiles</td></tr>
+                    <tr><td><span class="method get">GET</span></td><td>/actuator/health</td><td>Health</td></tr>
+                    <tr><td><span class="method get">GET</span></td><td>/errors/*</td><td>Chaos</td></tr>
+                </table>
+                <div style="margin-top:16px;">
+                    <div class="box database" style="padding:14px; box-shadow:none; border:1px dashed var(--orange);">
+                        <div class="box-header" style="font-size:0.9rem;">SQLite In-Memory</div>
+                        <div class="box-port">better-sqlite3 &mdash; equiv. of H2</div>
+                        <table class="route-table">
+                            <tr><th colspan="2">albums table</th></tr>
+                            <tr><td>id</td><td>TEXT PK</td></tr>
+                            <tr><td>title</td><td>TEXT NOT NULL</td></tr>
+                            <tr><td>artist</td><td>TEXT NOT NULL</td></tr>
+                            <tr><td>release_year</td><td>TEXT</td></tr>
+                            <tr><td>genre</td><td>TEXT</td></tr>
+                            <tr><td>track_count</td><td>INTEGER</td></tr>
+                            <tr><td>album_id</td><td>TEXT</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Strangler Fig -->
+    <div class="section">
+        <div class="section-title">2. Strangler Fig &mdash; Legacy vs Modernized</div>
+        <p class="section-subtitle">Both systems expose the same API contract. Traffic is routed via DNS / load balancer.</p>
+        <div class="strangler-grid">
+            <!-- Legacy -->
+            <div class="box legacy">
+                <div class="box-header">Legacy System <span class="tag eol">EOL</span></div>
+                <div class="box-port">Port 8080</div>
+                <div style="margin-bottom:10px;">
+                    <span class="tag eol">Spring Boot 2.4</span>
+                    <span class="tag eol">AngularJS 1.2</span>
+                    <span class="tag eol">Bootstrap 3.1</span>
+                </div>
+                <table class="route-table">
+                    <tr><th>Endpoint</th><th>Handler</th></tr>
+                    <tr><td>GET /albums</td><td>AlbumController</td></tr>
+                    <tr><td>GET /albums/{id}</td><td>AlbumController</td></tr>
+                    <tr><td>PUT /albums</td><td>AlbumController</td></tr>
+                    <tr><td>POST /albums</td><td>AlbumController</td></tr>
+                    <tr><td>DELETE /albums/{id}</td><td>AlbumController</td></tr>
+                    <tr><td>GET /appinfo</td><td>InfoController</td></tr>
+                    <tr><td>GET /actuator/*</td><td>Spring Actuator</td></tr>
+                    <tr><td>GET /errors/*</td><td>ErrorController</td></tr>
+                </table>
+                <div style="margin-top:10px; font-size:0.82rem; color: var(--gray);">
+                    DB: H2 / MySQL / PostgreSQL / MongoDB / Redis
+                </div>
+            </div>
+
+            <!-- Arrow -->
+            <div class="strangler-arrow">
+                <div class="arrow-line"></div>
+                <div class="arrow-text">SAME CONTRACT</div>
+                <div class="arrow-line"></div>
+                <div style="font-size:1.5rem;">&harr;</div>
+                <div class="arrow-line"></div>
+            </div>
+
+            <!-- Modernized -->
+            <div class="box" style="border-top: 4px solid var(--green);">
+                <div class="box-header">Modernized System <span class="tag new">NEW</span></div>
+                <div class="box-port">Backend :3001 &nbsp;|&nbsp; Frontend :5173</div>
+                <div style="margin-bottom:10px;">
+                    <span class="tag new">Node.js 18+</span>
+                    <span class="tag new">React 18</span>
+                    <span class="tag new">Vite</span>
+                </div>
+                <table class="route-table">
+                    <tr><th>Endpoint</th><th>Handler</th></tr>
+                    <tr><td>GET /albums</td><td>routes/albums.js</td></tr>
+                    <tr><td>GET /albums/:id</td><td>routes/albums.js</td></tr>
+                    <tr><td>PUT /albums</td><td>routes/albums.js</td></tr>
+                    <tr><td>POST /albums</td><td>routes/albums.js</td></tr>
+                    <tr><td>DELETE /albums/:id</td><td>routes/albums.js</td></tr>
+                    <tr><td>GET /appinfo</td><td>routes/appinfo.js</td></tr>
+                    <tr><td>GET /actuator/health</td><td>index.js</td></tr>
+                    <tr><td>GET /errors/*</td><td>routes/errors.js</td></tr>
+                </table>
+                <div style="margin-top:10px; font-size:0.82rem; color: var(--gray);">
+                    DB: SQLite in-memory (better-sqlite3)
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align:center; margin-top:16px;">
+            <span class="tag shared" style="font-size:0.85rem; padding:6px 16px;">
+                Shared: albums.json (30 seed albums)
+            </span>
+        </div>
+    </div>
+
+    <!-- 3. Frontend Component Tree -->
+    <div class="section">
+        <div class="section-title">3. Frontend Component Architecture</div>
+        <p class="section-subtitle">React component tree showing 1:1 mapping from legacy AngularJS pieces</p>
+        <div class="box" style="overflow-x:auto;">
+            <div class="tree">
+                <ul>
+                    <li>
+                        <span class="comp-name">App.jsx</span> <span class="comp-replace">&larr; replaces app.js + index.html</span>
+                        <ul>
+                            <li>
+                                <span class="comp-name">&lt;Header /&gt;</span> <span class="comp-replace">&larr; InfoController + header.html</span>
+                                <br><span class="comp-desc">"Spring Music" green navbar &bull; Info dropdown (profiles, services) &bull; Nav to /errors</span>
+                            </li>
+                            <li>
+                                <span class="comp-name">&lt;React Router Outlet&gt;</span>
+                                <ul>
+                                    <li>
+                                        <span class="comp-name">&lt;AlbumsPage /&gt;</span> <span class="comp-replace">&larr; AlbumsController + albums.html</span>
+                                        <br><span class="comp-desc">State: albums[], view mode, sortField, sortDescending</span>
+                                        <ul>
+                                            <li>
+                                                <span class="comp-name">&lt;ViewToggle /&gt;</span> <span class="comp-replace">&larr; grid/list toggle links</span>
+                                                <br><span class="comp-desc">Grid icon &bull; List icon</span>
+                                            </li>
+                                            <li>
+                                                <span class="comp-name">&lt;SortControls /&gt;</span> <span class="comp-replace">&larr; sort links + chevron</span>
+                                                <br><span class="comp-desc">title | artist | year | genre + asc/desc</span>
+                                            </li>
+                                            <li>
+                                                <span class="comp-name">&lt;StatusMessage /&gt;</span> <span class="comp-replace">&larr; StatusController + status.html</span>
+                                                <br><span class="comp-desc">Green success / Red error alert + close button</span>
+                                            </li>
+                                            <li>
+                                                <span class="comp-name">&lt;AlbumGrid /&gt;</span> <span class="comp-replace">&larr; grid.html</span>
+                                                <br><span class="comp-desc">4-column responsive card grid (col-xs-6 col-sm-3)</span>
+                                                <ul>
+                                                    <li>
+                                                        <span class="comp-name">&lt;AlbumCard /&gt;</span> <span class="comp-replace">&larr; single .thumbnail card</span>
+                                                        <ul>
+                                                            <li><span class="comp-name">&lt;InPlaceEdit field="title" /&gt;</span></li>
+                                                            <li><span class="comp-name">&lt;InPlaceEdit field="artist" /&gt;</span></li>
+                                                            <li><span class="comp-name">&lt;InPlaceEdit field="releaseYear" /&gt;</span></li>
+                                                            <li><span class="comp-name">&lt;InPlaceEdit field="genre" /&gt;</span></li>
+                                                            <li><span class="comp-desc">Dropdown: [edit] [delete]</span></li>
+                                                        </ul>
+                                                    </li>
+                                                </ul>
+                                            </li>
+                                            <li>
+                                                <span class="comp-name">&lt;AlbumList /&gt;</span> <span class="comp-replace">&larr; list.html</span>
+                                                <br><span class="comp-desc">Striped table &bull; InPlaceEdit per cell &bull; Dropdown actions</span>
+                                            </li>
+                                            <li>
+                                                <span class="comp-name">&lt;AlbumForm /&gt;</span> <span class="comp-replace">&larr; AlbumModalController + albumForm.html</span>
+                                                <br><span class="comp-desc">Modal: Title, Artist, Year (pattern), Genre &bull; All required &bull; OK/Cancel</span>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                    <li>
+                                        <span class="comp-name">&lt;ErrorsPage /&gt;</span> <span class="comp-replace">&larr; ErrorsController + errors.html</span>
+                                        <br><span class="comp-desc">[Kill] button &bull; [Throw Exception] button &bull; StatusMessage</span>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                <span class="comp-name">&lt;Footer /&gt;</span> <span class="comp-replace">&larr; footer.html</span>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. State & Data Flow -->
+    <div class="section">
+        <div class="section-title">4. Frontend State &amp; Data Flow</div>
+        <div class="flow-grid">
+            <div class="flow-box" style="border-top:3px solid var(--blue);">
+                <h4>useAlbums() Hook</h4>
+                <div class="flow-sub">Replaces Albums/Album factories + controller CRUD</div>
+                <p style="font-size:0.85rem; margin-bottom:8px;"><strong>State:</strong> <code>albums: Album[]</code></p>
+                <ul>
+                    <li>fetchAlbums()</li>
+                    <li>addAlbum(album)</li>
+                    <li>updateAlbum(album)</li>
+                    <li>deleteAlbum(id)</li>
+                </ul>
+            </div>
+            <div class="flow-box" style="border-top:3px solid var(--orange);">
+                <h4>useStatus() Hook</h4>
+                <div class="flow-sub">Replaces Status factory + StatusController</div>
+                <p style="font-size:0.85rem; margin-bottom:8px;"><strong>State:</strong> <code>{ isError, message } | null</code></p>
+                <ul>
+                    <li>success(msg)</li>
+                    <li>error(msg)</li>
+                    <li>clear()</li>
+                </ul>
+            </div>
+            <div class="flow-box" style="border-top:3px solid var(--green);">
+                <h4>API Client</h4>
+                <div class="flow-sub">Replaces $resource factories (Albums, Album, Info, Errors)</div>
+                <ul>
+                    <li>getAlbums() &rarr; GET</li>
+                    <li>addAlbum() &rarr; PUT</li>
+                    <li>updateAlbum() &rarr; POST</li>
+                    <li>deleteAlbum() &rarr; DELETE</li>
+                    <li>getAppInfo() &rarr; GET</li>
+                    <li>killApp() &rarr; GET</li>
+                    <li>throwError() &rarr; GET</li>
+                </ul>
+            </div>
+        </div>
+        <div style="text-align:center; margin-top:14px; color:var(--gray); font-size:0.85rem;">
+            Component &rarr; Hook &rarr; API Client &rarr; <code>fetch()</code> &rarr; Express Backend :3001
+        </div>
+    </div>
+
+    <!-- 5. Backend Layers -->
+    <div class="section">
+        <div class="section-title">5. Backend Layer Architecture</div>
+        <div class="layers">
+            <div class="layer middleware">
+                <span class="layer-badge">Middleware</span>
+                <h4>Middleware Layer</h4>
+                <div class="layer-items">
+                    <div class="layer-item">cors()</div>
+                    <div class="layer-item">express.json()</div>
+                    <div class="layer-item">validation.js</div>
+                </div>
+            </div>
+            <div class="layer routes">
+                <span class="layer-badge">Routes</span>
+                <h4>Route Layer</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-top:8px;">
+                    <div>
+                        <strong style="font-size:0.82rem;">routes/albums.js</strong>
+                        <div style="font-size:0.78rem; color:var(--gray);">Replaces AlbumController.java</div>
+                        <div class="layer-items" style="margin-top:4px;">
+                            <div class="layer-item">GET /albums</div>
+                            <div class="layer-item">GET /albums/:id</div>
+                            <div class="layer-item">PUT /albums</div>
+                            <div class="layer-item">POST /albums</div>
+                            <div class="layer-item">DELETE /albums/:id</div>
+                        </div>
+                    </div>
+                    <div>
+                        <strong style="font-size:0.82rem;">routes/appinfo.js</strong>
+                        <div style="font-size:0.78rem; color:var(--gray);">Replaces InfoController.java</div>
+                        <div class="layer-items" style="margin-top:4px;">
+                            <div class="layer-item">GET /appinfo</div>
+                            <div class="layer-item">GET /service</div>
+                        </div>
+                    </div>
+                    <div>
+                        <strong style="font-size:0.82rem;">routes/errors.js</strong>
+                        <div style="font-size:0.78rem; color:var(--gray);">Replaces ErrorController.java</div>
+                        <div class="layer-items" style="margin-top:4px;">
+                            <div class="layer-item">GET /errors/kill</div>
+                            <div class="layer-item">GET /errors/throw</div>
+                            <div class="layer-item">GET /errors/fill-heap</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="layer models">
+                <span class="layer-badge">Model</span>
+                <h4>Model Layer &mdash; models/album.js</h4>
+                <div style="font-size:0.78rem; color:var(--gray); margin-bottom:8px;">Replaces JpaAlbumRepository / MongoAlbumRepository / RedisAlbumRepository</div>
+                <div class="layer-items">
+                    <div class="layer-item">findAll() &rarr; SELECT *</div>
+                    <div class="layer-item">findById(id) &rarr; SELECT WHERE id=?</div>
+                    <div class="layer-item">save(album) &rarr; INSERT/UPDATE</div>
+                    <div class="layer-item">deleteById(id) &rarr; DELETE WHERE id=?</div>
+                    <div class="layer-item">count() &rarr; SELECT COUNT(*)</div>
+                </div>
+            </div>
+            <div class="layer db">
+                <span class="layer-badge">Database</span>
+                <h4>Database Layer</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
+                    <div>
+                        <strong style="font-size:0.82rem;">db/database.js</strong>
+                        <div style="font-size:0.78rem; color:var(--gray);">Replaces H2 + Spring Data auto-config</div>
+                        <div class="layer-items" style="margin-top:4px;">
+                            <div class="layer-item">better-sqlite3 in-memory</div>
+                            <div class="layer-item">CREATE TABLE albums (...)</div>
+                        </div>
+                    </div>
+                    <div>
+                        <strong style="font-size:0.82rem;">db/seed.js</strong>
+                        <div style="font-size:0.78rem; color:var(--gray);">Replaces AlbumRepositoryPopulator.java</div>
+                        <div class="layer-items" style="margin-top:4px;">
+                            <div class="layer-item">reads albums.json</div>
+                            <div class="layer-item">strips _class field</div>
+                            <div class="layer-item">inserts if count == 0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Anti-Corruption Layer -->
+    <div class="section">
+        <div class="section-title">6. Anti-Corruption Layer (ACL)</div>
+        <p class="section-subtitle">Boundaries that prevent legacy data model artifacts from leaking into the modernized system</p>
+        <div class="acl-grid">
+            <div class="acl-card">
+                <h4>_class Field</h4>
+                <div class="acl-legacy">"_class": "org.cloudfoundry...Album"</div>
+                <div class="acl-arrow">&darr; strip on import &darr;</div>
+                <div class="acl-modern">(field removed, never exposed)</div>
+            </div>
+            <div class="acl-card">
+                <h4>PUT/POST Semantics</h4>
+                <div class="acl-legacy">PUT = create, POST = update (unconventional)</div>
+                <div class="acl-arrow">&darr; preserve at boundary &darr;</div>
+                <div class="acl-modern">PUT = create, POST = update (contract compat)</div>
+            </div>
+            <div class="acl-card">
+                <h4>Null for Missing</h4>
+                <div class="acl-legacy">GET /albums/{id} &rarr; .orElse(null)</div>
+                <div class="acl-arrow">&darr; match at API boundary &darr;</div>
+                <div class="acl-modern">GET /albums/:id &rarr; res.json(null)</div>
+            </div>
+            <div class="acl-card">
+                <h4>CF-Specific Data</h4>
+                <div class="acl-legacy">CfEnv.findAllServices() &rarr; profiles[]</div>
+                <div class="acl-arrow">&darr; adapt &darr;</div>
+                <div class="acl-modern">{ profiles: ["node"], services: [] }</div>
+            </div>
+            <div class="acl-card">
+                <h4>Field Casing</h4>
+                <div class="acl-legacy">releaseYear, trackCount, albumId</div>
+                <div class="acl-arrow">&darr; keep exact casing &darr;</div>
+                <div class="acl-modern">releaseYear, trackCount, albumId</div>
+            </div>
+            <div class="acl-card">
+                <h4>albumId vs id</h4>
+                <div class="acl-legacy">Both id (PK) and albumId exist on entity</div>
+                <div class="acl-arrow">&darr; preserve, decouple &darr;</div>
+                <div class="acl-modern">id = PK (UUID), albumId = legacy compat field</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. Request Lifecycle -->
+    <div class="section">
+        <div class="section-title">7. Request Lifecycle &mdash; Add Album</div>
+        <div class="box">
+            <div class="lifecycle">
+                <div class="lc-step">
+                    <span class="lc-component fe">Frontend</span>
+                    <span class="lc-label">User clicks "Add an album"</span>
+                    <br><span class="lc-detail">AlbumsPage opens &lt;AlbumForm action="add" /&gt;</span>
+                </div>
+                <div class="lc-step">
+                    <span class="lc-component fe">Frontend</span>
+                    <span class="lc-label">User fills form &amp; clicks OK</span>
+                    <br><span class="lc-detail">AlbumForm validates: title (req), artist (req), releaseYear (/^[1-2]\d{3}$/), genre (req)</span>
+                </div>
+                <div class="lc-step">
+                    <span class="lc-component fe">Frontend</span>
+                    <span class="lc-label">useAlbums hook calls API</span>
+                    <br><span class="lc-detail">api.addAlbum(album) &rarr; PUT /albums { title, artist, releaseYear, genre }</span>
+                </div>
+                <div class="lc-step">
+                    <span class="lc-component be">Backend</span>
+                    <span class="lc-label">Express receives PUT /albums</span>
+                    <br><span class="lc-detail">routes/albums.js &rarr; validation middleware checks body</span>
+                </div>
+                <div class="lc-step">
+                    <span class="lc-component be">Backend</span>
+                    <span class="lc-label">Model saves to database</span>
+                    <br><span class="lc-detail">models/album.js.save() &rarr; generates UUID &rarr; INSERT INTO albums</span>
+                </div>
+                <div class="lc-step">
+                    <span class="lc-component db">Database</span>
+                    <span class="lc-label">SQLite inserts row</span>
+                    <br><span class="lc-detail">INSERT INTO albums (id, title, artist, release_year, genre, ...) VALUES (...)</span>
+                </div>
+                <div class="lc-step">
+                    <span class="lc-component be">Backend</span>
+                    <span class="lc-label">Returns saved album</span>
+                    <br><span class="lc-detail">res.json({ id: "uuid-...", title, artist, releaseYear, genre, trackCount, albumId })</span>
+                </div>
+                <div class="lc-step">
+                    <span class="lc-component fe">Frontend</span>
+                    <span class="lc-label">Hook updates state</span>
+                    <br><span class="lc-detail">useAlbums: re-fetches album list &bull; useStatus: success("Album saved")</span>
+                </div>
+                <div class="lc-step">
+                    <span class="lc-component fe">Frontend</span>
+                    <span class="lc-label">UI re-renders</span>
+                    <br><span class="lc-detail">AlbumGrid shows new card &bull; StatusMessage shows green "Album saved" alert</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. Tech Stack Comparison -->
+    <div class="section">
+        <div class="section-title">8. Technology Stack Comparison</div>
+        <div class="box" style="padding:0; overflow:hidden;">
+            <table class="stack-table">
+                <thead>
+                    <tr>
+                        <th>Layer</th>
+                        <th>Legacy</th>
+                        <th>Modernized</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Runtime</td><td>JVM (Java 8/11)</td><td>Node.js 18+</td></tr>
+                    <tr><td>Backend Framework</td><td>Spring Boot 2.4</td><td>Express 4.x</td></tr>
+                    <tr><td>Frontend Framework</td><td>AngularJS 1.2.16</td><td>React 18</td></tr>
+                    <tr><td>CSS Framework</td><td>Bootstrap 3.1.1</td><td>Bootstrap 5</td></tr>
+                    <tr><td>Frontend Routing</td><td>ngRoute</td><td>React Router 6</td></tr>
+                    <tr><td>HTTP Client</td><td>$resource (ngResource)</td><td>fetch API</td></tr>
+                    <tr><td>State Management</td><td>$scope + factories</td><td>React hooks (useState)</td></tr>
+                    <tr><td>UI Components</td><td>Directives + ng-*</td><td>JSX components</td></tr>
+                    <tr><td>Database</td><td>H2 / MySQL / PG / Mongo / Redis</td><td>SQLite in-memory</td></tr>
+                    <tr><td>ORM / Data Access</td><td>Spring Data JPA / MongoDB</td><td>Raw SQL (prepared stmts)</td></tr>
+                    <tr><td>Seed Data</td><td>Jackson2ResourceReader</td><td>JSON.parse + INSERT</td></tr>
+                    <tr><td>Health Check</td><td>Spring Actuator</td><td>Custom /actuator/health</td></tr>
+                    <tr><td>Build Tool</td><td>Gradle</td><td>npm</td></tr>
+                    <tr><td>Test Framework</td><td>JUnit</td><td>Vitest + Supertest</td></tr>
+                    <tr><td>Deploy Target</td><td>Cloud Foundry (JAR)</td><td>npm start (standalone)</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<div class="page-footer">
+    Spring Music Modernization &mdash; Strangler Fig Pattern &mdash; Node.js + React Target Architecture
+</div>
+
+</body>
+</html>

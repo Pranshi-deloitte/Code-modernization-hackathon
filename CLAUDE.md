@@ -30,6 +30,21 @@ java -jar -Dspring.profiles.active=mysql build/libs/spring-music.jar
 # Profiles: mysql, postgres, mongodb, redis (default: h2 in-memory)
 ```
 
+## Architecture Diagram
+
+A full visual architecture reference is available at `Documentation/architecture-diagram.html`. It covers:
+
+1. **High-Level System Overview** — Frontend (React + Vite) ↔ Backend (Node.js + Express) ↔ Database
+2. **Strangler Fig — Legacy vs Modernized** — Side-by-side view of both systems sharing the same API contract, traffic routed via DNS/load balancer
+3. **Frontend Component Architecture** — React 18 component tree mapped 1:1 from legacy AngularJS pieces
+4. **Frontend State & Data Flow** — Component → Hook → API Client → `fetch()` → Express backend (:3001)
+5. **Backend Layer Architecture** — Middleware → Routes → Model, replacing JPA/Mongo/Redis repositories with a single Node.js adapter
+6. **Anti-Corruption Layer (ACL)** — Boundaries preventing legacy data model artifacts from leaking into the modernized system
+7. **Request Lifecycle** — Step-by-step trace of a PUT /albums request end-to-end
+8. **Technology Stack Comparison** — Legacy (JVM / Spring Boot / AngularJS) vs Modernized (Node.js 18+ / Express 4 / React 18)
+
+> Modernization target: **Node.js + Express** backend, **React 18 + Vite** frontend, strangler fig pattern.
+
 ## Architecture (Legacy)
 
 **Spring Music** is a Spring Boot 2.4.0 app demonstrating polyglot persistence — the same `Album` domain object is stored/retrieved using interchangeable backends.
